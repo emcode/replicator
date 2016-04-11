@@ -1,0 +1,20 @@
+{
+    "name": "simplercode/git-replicator",
+    "type": "project",
+    "keywords": ["cli", "composer", "git", "workflow", "offline", "development"],
+    "require": {
+        "symfony/console": "^3.0",
+        "symfony/stopwatch": "^3.0",
+        "simplercode/git-access-layer": "0.0.1"
+    },
+    "autoload": {
+        "psr-4": { "": "./src/" }
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "emcode",
+            "email": "michal@simplercode.com"
+        }
+    ]
+}
