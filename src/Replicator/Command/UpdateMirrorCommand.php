@@ -17,7 +17,7 @@ class UpdateMirrorCommand extends Command
      * @var string
      */
     protected $workingDir;
-    
+
     /**
      * @var PathHelper
      */
@@ -27,12 +27,12 @@ class UpdateMirrorCommand extends Command
      * @var string
      */
     protected $lastWorkingDir;
-    
+
     /**
      * MirrorCommand constructor.
      *
-     * @param string $workingDir
-     * @param PathHelper $pathHelper
+     * @param string      $workingDir
+     * @param PathHelper  $pathHelper
      * @param string|null $name
      */
     public function __construct($workingDir, PathHelper $pathHelper, $name = null)
@@ -71,7 +71,7 @@ class UpdateMirrorCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $mirrorName = $input->getArgument('mirror-name');
-        
+
         if (null === $mirrorName)
         {
             // assume that repo is in our workingDir
@@ -80,7 +80,7 @@ class UpdateMirrorCommand extends Command
         }
 
         $mirrorName = $this->pathHelper->normalizePath($mirrorName);
-        
+
         if ($output->isVerbose())
         {
             $output->writeln(sprintf('Working directory: <info>%s</info>', $this->workingDir));
@@ -88,24 +88,24 @@ class UpdateMirrorCommand extends Command
 
         $lastWorkingDir = getcwd();
         $this->pathHelper->goToDir($this->workingDir);
-        
+
         $all = $input->getOption('all');
 
         $updateArguments = ['update'];
-        
+
         if ($input->getOption('prune'))
         {
             $updateArguments[] = '--prune';
         }
-                
+
         if (true === $all)
         {
             $output->writeln('Searching for bare repositories, please wait...');
             $repositories = $this->searchForBareRepositories($this->workingDir);
             $repositoriesNum = count($repositories);
-            
+
             $output->writeln(sprintf('Found <info>%s</info> repositories', $repositoriesNum));
-            
+
             if (empty($repositories))
             {
                 $output->writeln(sprintf('<comment>There are no GIT bare repositories in path: %s</comment>', $this->workingDir));
@@ -115,12 +115,12 @@ class UpdateMirrorCommand extends Command
 
                 return;
             }
-            
+
             $processor = new Processor();
             $remoteCommand = new RemoteCommand($processor);
-            
+
             $index = 1;
-            
+
             foreach($repositories as $repositoryPath)
             {
                 $niceRepoName = $this->pathHelper->getPathDiff($this->workingDir, $repositoryPath);
@@ -130,14 +130,14 @@ class UpdateMirrorCommand extends Command
                 $remoteCommand->execute($updateArguments);
                 ++$index;
             }
-            
+
             $output->writeln('<info>Command complete.</info>');
-            
+
             return;
         }
 
         $repositoryPath = ($mirrorName === $this->workingDir) ? $mirrorName : $this->workingDir . DIRECTORY_SEPARATOR . $mirrorName;
-        
+
         if (!$this->doesLookLikeBareGitRepository($repositoryPath))
         {
             $output->writeln(sprintf('<comment>There are no GIT bare repository in path: %s</comment>', $repositoryPath));
@@ -150,7 +150,7 @@ class UpdateMirrorCommand extends Command
 
         $processor = new Processor();
         $remoteCommand = new RemoteCommand($processor);
-       
+
         $output->writeln(sprintf('Updating repository: <info>%s</info>', $mirrorName));
         $output->writeln('Please wait...');
         $processor->setPathToRepo($repositoryPath, true);
@@ -158,31 +158,32 @@ class UpdateMirrorCommand extends Command
 
         $output->writeln('<info>Command complete.</info>');
         $this->pathHelper->goToDir($lastWorkingDir);
-        
+
         return;
     }
 
     /**
      * @param $dirToSearch
+     *
      * @return array
      */
     public function searchForBareRepositories($dirToSearch)
     {
         $dirIterator = new \RecursiveDirectoryIterator($dirToSearch);
         $pathIterator = new \RecursiveIteratorIterator($dirIterator, \RecursiveIteratorIterator::SELF_FIRST);
-        
+
         $repoPaths = [];
-        
+
         /* @var $object \SplFileInfo */
         foreach($pathIterator as $name => $object)
         {
             $currentPath = $object->getPath();
-            
+
             if (in_array($currentPath, $repoPaths, true))
             {
                 continue;
             }
-            
+
             if ($object->isFile() && $object->getBasename() === 'HEAD')
             {
                 if ($this->doesLookLikeBareGitRepository($currentPath))
@@ -191,27 +192,28 @@ class UpdateMirrorCommand extends Command
                 }
             }
         }
-        
+
         return $repoPaths;
     }
 
     /**
      * @param string $somePath
+     *
      * @return bool
      */
     public function doesLookLikeBareGitRepository($somePath)
     {
         $pathSections = explode(DIRECTORY_SEPARATOR, $somePath);
         $lastSection = end($pathSections);
-        
+
         if ($lastSection === '.git')
         {
             return false;
         }
-        
-        return is_file($somePath . DIRECTORY_SEPARATOR . 'HEAD') 
-            && is_file($somePath . DIRECTORY_SEPARATOR . 'config') 
-            && is_dir($somePath . DIRECTORY_SEPARATOR . 'objects') 
+
+        return is_file($somePath . DIRECTORY_SEPARATOR . 'HEAD')
+            && is_file($somePath . DIRECTORY_SEPARATOR . 'config')
+            && is_dir($somePath . DIRECTORY_SEPARATOR . 'objects')
             && is_dir($somePath . DIRECTORY_SEPARATOR . 'refs');
     }
 }

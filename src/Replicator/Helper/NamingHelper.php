@@ -13,11 +13,12 @@ class NamingHelper
      * @var string
      */
     protected $packagePattern = '/^[a-zA-Z0-9-]+\/[a-zA-Z0-9-]+$/';
-    
+
     /**
-     * @param $repoToClone
-     * @param null $targetRepoName
-     * @param null $parentPath
+     * @param string      $repoToClone
+     * @param null|string $targetRepoName
+     * @param null|string $parentPath
+     *
      * @return string
      */
     public function chooseTargetRepositoryPath($repoToClone, $targetRepoName = null, $parentPath = null)
@@ -37,7 +38,7 @@ class NamingHelper
             if (null === $targetRepoName)
             {
                 $targetPath = $this->prepareTargetRepositoryPath($repoToClone, true);
-                
+
             } else
             {
                 $targetPath = $targetRepoName;
@@ -46,24 +47,25 @@ class NamingHelper
         } else
         {
             // we have some parent path that we should use
-            
+
             if (null === $targetRepoName)
             {
                 $mirrorRepoName = $this->prepareTargetRepositoryPath($repoToClone, false);
                 $targetPath = $parentPath . DIRECTORY_SEPARATOR . $mirrorRepoName;
-                
+
             } else
             {
                 $targetPath = $parentPath . DIRECTORY_SEPARATOR . $targetRepoName;
             }
         }
-        
+
         return $targetPath;
     }
 
     /**
      * @param string $repoPathOrUrl
-     * @param bool $withParentPath
+     * @param bool   $withParentPath
+     *
      * @return string
      */
     public function prepareTargetRepositoryPath($repoPathOrUrl, $withParentPath = false)
@@ -90,9 +92,9 @@ class NamingHelper
 
         return $repoPath;
     }
-    
+
     /**
-     * @param array $composerOutputLines
+     * @param array|string[] $composerOutputLines
      *
      * @return string|null
      */
@@ -122,7 +124,7 @@ class NamingHelper
     }
 
     /**
-     * @param array $composerOutputLines
+     * @param array|string[] $composerOutputLines
      * 
      * @return array
      */

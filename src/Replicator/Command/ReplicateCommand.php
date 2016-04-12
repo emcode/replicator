@@ -3,7 +3,6 @@
 namespace Replicator\Command;
 
 use Replicator\Exception\FileNotFoundException;
-use Replicator\Exception\UnreacheablePathException;
 use Replicator\Helper\NamingHelper;
 use Replicator\Helper\PathHelper;
 use Symfony\Component\Console\Command\Command;
@@ -22,7 +21,7 @@ class ReplicateCommand extends Command
      * @var string
      */
     protected $workingPath;
-    
+
     /**
      * @var PathHelper
      */
@@ -32,14 +31,14 @@ class ReplicateCommand extends Command
      * @var NamingHelper
      */
     protected $namingHelper;
-    
+
     /**
      * MirrorCommand constructor.
      *
-     * @param string $workingPath
+     * @param string       $workingPath
      * @param NamingHelper $namingHelper
-     * @param PathHelper $pathHelper
-     * @param string|null $name
+     * @param PathHelper   $pathHelper
+     * @param string|null  $name
      */
     public function __construct($workingPath, NamingHelper $namingHelper, PathHelper $pathHelper, $name = null)
     {
@@ -48,7 +47,7 @@ class ReplicateCommand extends Command
         $this->namingHelper = $namingHelper;
         parent::__construct($name);
     }
-    
+
     protected function configure()
     {
         $this
@@ -204,7 +203,7 @@ class ReplicateCommand extends Command
         $this->pathHelper->goToDir($lastWorkingDir);
         $output->writeln('<info>Command complete.</info>');
     }
-    
+
     /**
      * @return ProcessBuilder
      */

@@ -28,14 +28,14 @@ class CreateMirrorCommand extends Command
      * @var PathHelper
      */
     protected $pathHelper;
-    
+
     /**
      * MirrorCommand constructor.
      *
-     * @param string $workingPath
+     * @param string       $workingPath
      * @param NamingHelper $namingHelper
-     * @param PathHelper $pathHelper
-     * @param string|null $name
+     * @param PathHelper   $pathHelper
+     * @param string|null  $name
      */
     public function __construct($workingPath, NamingHelper $namingHelper, PathHelper $pathHelper, $name = null)
     {
@@ -77,7 +77,7 @@ class CreateMirrorCommand extends Command
         $parentPath = $input->getOption('parent-path');
 
         $targetPath = $this->namingHelper->chooseTargetRepositoryPath($repoToClone, $targetRepoName, $parentPath);
-        
+
         if ($output->isVerbose())
         {
             $output->writeln(sprintf('Working directory: <info>%s</info>', $this->workingPath));
@@ -85,7 +85,7 @@ class CreateMirrorCommand extends Command
 
         $output->writeln(sprintf('Cloning <info>%s</info> to <info>%s</info>', $repoToClone, $targetPath));
 
-        $lastWorkingDir = getcwd();        
+        $lastWorkingDir = getcwd();
         $this->pathHelper->goToDir($this->workingPath);
         $output->writeln('Cloning, please wait...');
         $cloneCommand = new CloneCommand(new Processor());

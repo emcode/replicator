@@ -8,6 +8,7 @@ class PathHelper
 {
     /**
      * @param $somePath
+     *
      * @throws UnreacheablePathException
      */
     public function goToDir($somePath)
@@ -20,19 +21,27 @@ class PathHelper
         }
     }
 
+    /**
+     * @param string $baseDir
+     * @param string $otherDir
+     * 
+     * @return string
+     */
     public function getPathDiff($baseDir, $otherDir)
-    { 
+    {
         if (strpos($otherDir, $baseDir) === 0)
         {
             $otherDir = mb_substr($otherDir, strlen($baseDir));
+
             return self::normalizePath($otherDir);
         }
-        
+
         return $otherDir;
     }
 
     /**
      * @param string $somePath
+     *
      * @return string
      */
     public static function normalizePath($somePath)
