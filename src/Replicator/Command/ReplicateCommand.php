@@ -4,6 +4,8 @@ namespace Replicator\Command;
 
 use Replicator\Exception\FileNotFoundException;
 use Replicator\Exception\UnreacheablePathException;
+use Replicator\Helper\NamingHelper;
+use Replicator\Helper\PathHelper;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
@@ -19,13 +21,34 @@ class ReplicateCommand extends Command
     /**
      * @var string
      */
-    protected $repositoryPattern = '/source[ ]+: \[git\] (?P<repository>[^ ]+)/';
+    protected $workingPath;
+    
+    /**
+     * @var PathHelper
+     */
+    protected $pathHelper;
 
     /**
-     * @var string
+     * @var NamingHelper
      */
-    protected $packagePattern = '/^[a-zA-Z0-9-]+\/[a-zA-Z0-9-]+$/';
-
+    protected $namingHelper;
+    
+    /**
+     * MirrorCommand constructor.
+     *
+     * @param string $workingPath
+     * @param NamingHelper $namingHelper
+     * @param PathHelper $pathHelper
+     * @param string|null $name
+     */
+    public function __construct($workingPath, NamingHelper $namingHelper, PathHelper $pathHelper, $name = null)
+    {
+        $this->workingPath = $workingPath;
+        $this->pathHelper = $pathHelper;
+        $this->namingHelper = $namingHelper;
+        parent::__construct($name);
+    }
+    
     protected function configure()
     {
         $this
@@ -56,7 +79,7 @@ class ReplicateCommand extends Command
         $projectPath = $input->getArgument('project-path');
 
         $lastWorkingDir = getcwd();
-        $this->goToDir($projectPath);
+        $this->pathHelper->goToDir($projectPath);
 
         if (!is_readable('./composer.json'))
         {
@@ -73,7 +96,7 @@ class ReplicateCommand extends Command
         $process->mustRun();
         $processOutput = $process->getOutput();
         $rawLines = explode(PHP_EOL, $processOutput);
-        $packageNames = $this->extractPackageNamesFromComposerOutput($rawLines);
+        $packageNames = $this->namingHelper->extractPackageNamesFromComposerOutput($rawLines);
 
         if ($output->isVerbose())
         {
@@ -107,7 +130,7 @@ class ReplicateCommand extends Command
             $process->mustRun();
             $processOutput = $process->getOutput();
             $rawLines = explode(PHP_EOL, $processOutput);
-            $packageRepository = $this->findPackageRepositoryInComposerOutput($rawLines);
+            $packageRepository = $this->namingHelper->findPackageRepositoryInComposerOutput($rawLines);
 
             if (null === $packageRepository)
             {
@@ -135,7 +158,7 @@ class ReplicateCommand extends Command
         {
             $output->writeln(sprintf('<comment>Could not find any repositories for packages inside this project</comment>'));
             $output->writeln('<info>Command complete.</info>');
-            $this->goToDir($lastWorkingDir);
+            $this->pathHelper->goToDir($lastWorkingDir);
 
             return;
         }
@@ -145,14 +168,14 @@ class ReplicateCommand extends Command
 
         if (!$questionHelper->ask($input, $output, $question))
         {
-            $this->goToDir($lastWorkingDir);
+            $this->pathHelper->goToDir($lastWorkingDir);
 
             return;
         }
 
         $parentPath = $input->getOption('parent-path');
         $mirrorsCount = count($mirrorsToCreate);
-        $mirrorCommand = new MirrorCommand($lastWorkingDir);
+        $mirrorCommand = new CreateMirrorCommand($lastWorkingDir, $this->namingHelper, $this->pathHelper);
         $index = 1;
 
         foreach($mirrorsToCreate as $package => $repository)
@@ -178,23 +201,10 @@ class ReplicateCommand extends Command
             ++$index;
         }
 
-        $this->goToDir($lastWorkingDir);
+        $this->pathHelper->goToDir($lastWorkingDir);
         $output->writeln('<info>Command complete.</info>');
     }
-
-    /**
-     * @param $somePath
-     */
-    protected function goToDir($somePath)
-    {
-        $changingResult = chdir($somePath);
-
-        if (true !== $changingResult)
-        {
-            throw new UnreacheablePathException(sprintf('Could not change working dir to path: %s', $somePath));
-        }
-    }
-
+    
     /**
      * @return ProcessBuilder
      */
@@ -212,61 +222,5 @@ class ReplicateCommand extends Command
         }
 
         return $builder;
-    }
-
-    /**
-     * @param array $composerOutputLines
-     *
-     * @return string|null
-     */
-    protected function findPackageRepositoryInComposerOutput(array $composerOutputLines)
-    {
-        $repository = null;
-
-        foreach($composerOutputLines as $rawLine)
-        {
-            if (strpos($rawLine, 'source') === false)
-            {
-                continue;
-            }
-
-            $matches = [];
-            $matchingResult = preg_match($this->repositoryPattern, $rawLine, $matches);
-
-            if (1 !== $matchingResult)
-            {
-                continue;
-            }
-
-            $repository = $matches['repository'];
-        }
-
-        return $repository;
-    }
-
-    protected function extractPackageNamesFromComposerOutput(array $composerOutputLines)
-    {
-        $packageNames = [];
-
-        foreach($composerOutputLines as $rawLine)
-        {
-            if (empty($rawLine))
-            {
-                continue;
-            }
-
-            $packageName = trim($rawLine);
-
-            $matchingResult = preg_match($this->packagePattern, $packageName);
-
-            if (1 !== $matchingResult)
-            {
-                continue;
-            }
-
-            $packageNames[] = $packageName;
-        }
-
-        return $packageNames;
     }
 }
