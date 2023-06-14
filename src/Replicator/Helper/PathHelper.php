@@ -7,11 +7,9 @@ use Replicator\Exception\UnreacheablePathException;
 class PathHelper
 {
     /**
-     * @param $somePath
-     *
      * @throws UnreacheablePathException
      */
-    public function goToDir($somePath)
+    public function goToDir(string $somePath): void
     {
         $changingResult = chdir($somePath);
 
@@ -27,7 +25,7 @@ class PathHelper
      * 
      * @return string
      */
-    public function getPathDiff($baseDir, $otherDir)
+    public function getPathDiff(string $baseDir, string $otherDir): string
     {
         if (strpos($otherDir, $baseDir) === 0)
         {
@@ -39,12 +37,7 @@ class PathHelper
         return $otherDir;
     }
 
-    /**
-     * @param string $somePath
-     *
-     * @return string
-     */
-    public static function normalizePath($somePath)
+    public static function normalizePath(string $somePath): string
     {
         return trim($somePath, '/');
     }

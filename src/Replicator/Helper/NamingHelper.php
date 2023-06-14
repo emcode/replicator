@@ -2,6 +2,8 @@
 
 namespace Replicator\Helper;
 
+use Assert\Assertion;
+
 class NamingHelper
 {
     /**
@@ -14,14 +16,11 @@ class NamingHelper
      */
     protected $packagePattern = '/^[a-zA-Z0-9-]+\/[a-zA-Z0-9-]+$/';
 
-    /**
-     * @param string      $repoToClone
-     * @param null|string $targetRepoName
-     * @param null|string $parentPath
-     *
-     * @return string
-     */
-    public function chooseTargetRepositoryPath($repoToClone, $targetRepoName = null, $parentPath = null)
+    public function chooseTargetRepositoryPath(
+        string $repoToClone,
+        ?string $targetRepoName = null,
+        ?string $parentPath = null
+    ): string
     {
         if (null !== $parentPath)
         {
@@ -62,15 +61,13 @@ class NamingHelper
         return $targetPath;
     }
 
-    /**
-     * @param string $repoPathOrUrl
-     * @param bool   $withParentPath
-     *
-     * @return string
-     */
-    public function prepareTargetRepositoryPath($repoPathOrUrl, $withParentPath = false)
+    public function prepareTargetRepositoryPath(
+        string $repoPathOrUrl,
+        bool $withParentPath = false
+    ): string
     {
         $path = parse_url($repoPathOrUrl, PHP_URL_PATH);
+        Assertion::string($path);
         $pathSections = explode(DIRECTORY_SEPARATOR, $path);
 
         $repoName = array_pop($pathSections);
@@ -95,10 +92,11 @@ class NamingHelper
 
     /**
      * @param array|string[] $composerOutputLines
-     *
      * @return string|null
      */
-    public function findPackageRepositoryInComposerOutput(array $composerOutputLines)
+    public function findPackageRepositoryInComposerOutput(
+        array $composerOutputLines
+    ): ?string
     {
         $repository = null;
 
@@ -125,10 +123,11 @@ class NamingHelper
 
     /**
      * @param array|string[] $composerOutputLines
-     * 
-     * @return array
+     * @return array|string[]
      */
-    public function extractPackageNamesFromComposerOutput(array $composerOutputLines)
+    public function extractPackageNamesFromComposerOutput(
+        array $composerOutputLines
+    ): array
     {
         $packageNames = [];
 

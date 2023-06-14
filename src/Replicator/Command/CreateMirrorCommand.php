@@ -2,6 +2,7 @@
 
 namespace Replicator\Command;
 
+use Assert\Assertion;
 use Replicator\Helper\NamingHelper;
 use Replicator\Helper\PathHelper;
 use Simplercode\GAL\Command\CloneCommand;
@@ -70,11 +71,18 @@ class CreateMirrorCommand extends Command
         ;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $repoToClone = $input->getArgument('repository');
+        Assertion::string($repoToClone);
+
         $targetRepoName = $input->getOption('mirror-name');
+        Assertion::nullOrString($targetRepoName);
+        /** @var string|null $targetRepoName */
+
         $parentPath = $input->getOption('parent-path');
+        Assertion::nullOrString($parentPath);
+        /** @var string|null $parentPath */
 
         $targetPath = $this->namingHelper->chooseTargetRepositoryPath($repoToClone, $targetRepoName, $parentPath);
 
@@ -86,10 +94,13 @@ class CreateMirrorCommand extends Command
         $output->writeln(sprintf('Cloning <info>%s</info> to <info>%s</info>', $repoToClone, $targetPath));
 
         $lastWorkingDir = getcwd();
+        Assertion::string($lastWorkingDir);
+
         $this->pathHelper->goToDir($this->workingPath);
         $output->writeln('Cloning, please wait...');
         $cloneCommand = new CloneCommand(new Processor());
         $cloneCommand->execute([$repoToClone, $targetPath, '--mirror', '--bare']);
         $this->pathHelper->goToDir($lastWorkingDir);
+        return self::SUCCESS;
     }
 }

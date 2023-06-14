@@ -2,16 +2,20 @@
 
 namespace Replicator\Command;
 
+use Assert\Assertion;
 use Replicator\Exception\FileNotFoundException;
 use Replicator\Helper\NamingHelper;
 use Replicator\Helper\PathHelper;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
+use Symfony\Component\Console\Question\Question;
+use Symfony\Component\Process\Process;
 use Symfony\Component\Process\ProcessBuilder;
 use Symfony\Component\Console\Helper\Table;
 
@@ -73,11 +77,14 @@ class ReplicateCommand extends Command
         ;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $projectPath = $input->getArgument('project-path');
+        Assertion::string($projectPath);
 
         $lastWorkingDir = getcwd();
+        Assertion::string($lastWorkingDir);
+
         $this->pathHelper->goToDir($projectPath);
 
         if (!is_readable('./composer.json'))
@@ -85,13 +92,12 @@ class ReplicateCommand extends Command
             throw new FileNotFoundException(sprintf('Could not find composer.json file in path: %s', getcwd()));
         }
 
-        $builder = $this->setupComposerCommandBuilder();
-        $builder->setArguments([
+        $process = new Process([
+            ... $this->getComposerCommand(),
             'show',
             '--name-only',
         ]);
 
-        $process = $builder->getProcess();
         $process->mustRun();
         $processOutput = $process->getOutput();
         $rawLines = explode(PHP_EOL, $processOutput);
@@ -107,7 +113,7 @@ class ReplicateCommand extends Command
             $output->writeln(sprintf('<comment>Could not find any vendor packages inside this project</comment>'));
             $output->writeln('<info>Command complete.</info>');
 
-            return;
+            return self::INVALID;
         }
 
         $debugTableContent = [];
@@ -120,12 +126,11 @@ class ReplicateCommand extends Command
                 $output->writeln(sprintf('Finding repository for package: <info>%s</info>', $currentPackage));
             }
 
-            $builder->setArguments([
+            $process = new Process([
+                ... $this->getComposerCommand(),
                 'show',
                 $currentPackage,
             ]);
-
-            $process = $builder->getProcess();
             $process->mustRun();
             $processOutput = $process->getOutput();
             $rawLines = explode(PHP_EOL, $processOutput);
@@ -159,9 +164,10 @@ class ReplicateCommand extends Command
             $output->writeln('<info>Command complete.</info>');
             $this->pathHelper->goToDir($lastWorkingDir);
 
-            return;
+            return self::INVALID;
         }
 
+        /** @var QuestionHelper $questionHelper */
         $questionHelper = $this->getHelper('question');
         $question = new ConfirmationQuestion(sprintf('Create mirror repositories of <info>%s</info> projects? [yes] ', count($mirrorsToCreate)), true);
 
@@ -169,7 +175,7 @@ class ReplicateCommand extends Command
         {
             $this->pathHelper->goToDir($lastWorkingDir);
 
-            return;
+            return self::SUCCESS;
         }
 
         $parentPath = $input->getOption('parent-path');
@@ -185,7 +191,7 @@ class ReplicateCommand extends Command
 
             $arguments = [
                 'repository' => $repository,
-                '--target-name' => $package,
+                '--mirror-name' => $package,
                 '--parent-path' => $parentPath,
             ];
 
@@ -202,24 +208,21 @@ class ReplicateCommand extends Command
 
         $this->pathHelper->goToDir($lastWorkingDir);
         $output->writeln('<info>Command complete.</info>');
+        return self::SUCCESS;
     }
 
     /**
-     * @return ProcessBuilder
+     * @return string[]
      */
-    protected function setupComposerCommandBuilder()
+    protected function getComposerCommand(): array
     {
-        $builder = new ProcessBuilder();
-
         if (is_file('./composer.phar'))
         {
-            $builder->setPrefix('php ./composer.phar');
+            return [ 'php', './composer.phar' ];
 
         } else
         {
-            $builder->setPrefix('composer');
+            return [ 'composer' ];
         }
-
-        return $builder;
     }
 }

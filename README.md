@@ -1,8 +1,10 @@
 # replicator
 CLI utility for mirroring large numbers of GIT repositories and composer dependencies
-
+  
+![GitHub](https://img.shields.io/github/license/emcode/replicator)
+![Build Status](https://github.com/emcode/replicator/actions/workflows/ci.yml/badge.svg)
+  
 Using this project you can create mirrors / clone of all dependencies for given project based on it's composer.json file. This together with satis allows for faster composer installations and development without access to the internet.
-
 
 # usage
 
@@ -24,6 +26,6 @@ Update previously created mirror repository:
 
 `php ./replicator.php mirror:update <local-git-repository>`
 
-Update multiple repositories inside given path. This finds bare repositores recursively:
+Update multiple repositories inside given path. This finds bare repositories recursively:
 
 `php ./replicator.php mirror:update <some-optional-path> --all`

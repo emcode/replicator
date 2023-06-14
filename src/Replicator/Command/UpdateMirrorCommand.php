@@ -2,6 +2,7 @@
 
 namespace Replicator\Command;
 
+use Assert\Assertion;
 use Replicator\Helper\PathHelper;
 use Simplercode\GAL\Command\RemoteCommand;
 use Simplercode\GAL\Processor;
@@ -13,29 +14,20 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class UpdateMirrorCommand extends Command
 {
-    /**
-     * @var string
-     */
-    protected $workingDir;
+    protected string $workingDir;
 
-    /**
-     * @var PathHelper
-     */
-    protected $pathHelper;
+    protected PathHelper $pathHelper;
 
-    /**
-     * @var string
-     */
-    protected $lastWorkingDir;
+    protected string $lastWorkingDir;
 
     /**
      * MirrorCommand constructor.
-     *
-     * @param string      $workingDir
-     * @param PathHelper  $pathHelper
-     * @param string|null $name
      */
-    public function __construct($workingDir, PathHelper $pathHelper, $name = null)
+    public function __construct(
+        string $workingDir,
+        PathHelper $pathHelper,
+        ?string $name = null
+    )
     {
         $this->workingDir = $workingDir;
         $this->pathHelper = $pathHelper;
@@ -68,15 +60,17 @@ class UpdateMirrorCommand extends Command
         ;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $mirrorName = $input->getArgument('mirror-name');
 
         if (null === $mirrorName)
         {
-            // assume that repo is in our workingDir
-            // workingDir can come from getcwd() or from config
+            // assume that repo is in our workingDir: workingDir can come from getcwd() or from config
             $mirrorName = $this->workingDir;
+        } else
+        {
+            Assertion::string($mirrorName);
         }
 
         $mirrorName = $this->pathHelper->normalizePath($mirrorName);
@@ -87,6 +81,8 @@ class UpdateMirrorCommand extends Command
         }
 
         $lastWorkingDir = getcwd();
+        Assertion::string($lastWorkingDir);
+
         $this->pathHelper->goToDir($this->workingDir);
 
         $all = $input->getOption('all');
@@ -113,7 +109,7 @@ class UpdateMirrorCommand extends Command
                 $output->writeln('<info>Command complete.</info>');
                 $this->pathHelper->goToDir($lastWorkingDir);
 
-                return;
+                return self::INVALID;
             }
 
             $processor = new Processor();
@@ -133,7 +129,7 @@ class UpdateMirrorCommand extends Command
 
             $output->writeln('<info>Command complete.</info>');
 
-            return;
+            return self::SUCCESS;
         }
 
         $repositoryPath = ($mirrorName === $this->workingDir) ? $mirrorName : $this->workingDir . DIRECTORY_SEPARATOR . $mirrorName;
@@ -145,7 +141,7 @@ class UpdateMirrorCommand extends Command
             $output->writeln('<info>Command complete.</info>');
             $this->pathHelper->goToDir($lastWorkingDir);
 
-            return;
+            return self::INVALID;
         }
 
         $processor = new Processor();
@@ -159,24 +155,22 @@ class UpdateMirrorCommand extends Command
         $output->writeln('<info>Command complete.</info>');
         $this->pathHelper->goToDir($lastWorkingDir);
 
-        return;
+        return self::SUCCESS;
     }
 
     /**
-     * @param $dirToSearch
-     *
-     * @return array
+     * @return array|string[]
      */
-    public function searchForBareRepositories($dirToSearch)
+    public function searchForBareRepositories(string $dirToSearch): array
     {
         $dirIterator = new \RecursiveDirectoryIterator($dirToSearch);
         $pathIterator = new \RecursiveIteratorIterator($dirIterator, \RecursiveIteratorIterator::SELF_FIRST);
 
         $repoPaths = [];
 
-        /* @var $object \SplFileInfo */
         foreach($pathIterator as $name => $object)
         {
+            /** @var \SplFileInfo $object */
             $currentPath = $object->getPath();
 
             if (in_array($currentPath, $repoPaths, true))

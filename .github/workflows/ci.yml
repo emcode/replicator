@@ -1,0 +1,31 @@
+name: Unit Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-test:
+    strategy:
+      matrix:
+        php-version: [ "8.1", "8.2" ]
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install composer and dependencies
+        uses: php-actions/composer@v6
+        with:
+          php_version: ${{ matrix.php-version }}
+
+      -
+        if: ${{ matrix.php-version == '8.2' }}
+        name: PHPStan Static Analysis
+        uses: php-actions/phpstan@v3
+        with:
+          path: src/
+          php_version: ${{ matrix.php-version }}
+          configuration: phpstan.neon
